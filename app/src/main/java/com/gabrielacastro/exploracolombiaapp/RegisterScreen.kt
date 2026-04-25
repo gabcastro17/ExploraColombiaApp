@@ -1,6 +1,7 @@
 package com.gabrielacastro.exploracolombiaapp
 
 
+import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -22,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -33,6 +35,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gabrielacastro.exploracolombiaapp.ui.theme.ExploraColombiaAppTheme
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.auth
 
 @Composable
 fun RegisterScreen(
@@ -47,9 +53,21 @@ fun RegisterScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var acceptedTerms by remember { mutableStateOf(false) }
 
+    var nameError by remember {mutableStateOf("")}
+    var emailError by remember { mutableStateOf("") }
+    var passwordError by remember { mutableStateOf("") }
+    var confirmPasswordError by remember {mutableStateOf("")}
+
+    var registerError by remember {mutableStateOf("")}
+
     val primaryOrange = Color(0xFFE45D25)
     val lightGrayBg = Color(0xFFF8F9FE)
     val inputBg = Color(0xFFE5E5EA)
+    val auth = Firebase.auth
+    val activity = LocalView.current.context as Activity
+
+
+
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -58,6 +76,7 @@ fun RegisterScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -112,8 +131,12 @@ fun RegisterScreen(
                     onValueChange = { name = it },
                     placeholder = "Tu nombre",
                     leadingIcon = Icons.Default.Person,
-                    inputBg = inputBg
+                    inputBg = inputBg,
+
                 )
+                if(registerError.isNotEmpty()){
+                    Text(registerError, color = Color.Red)
+                }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -179,7 +202,32 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Button(
-                onClick = { onRegisterSuccess() },
+                onClick = {
+                          val isValidName = validateName(name).first
+                          val isValidEmail = validateEmail(email).first
+                          val isValidPassword = validatePassword(password).first
+                          val isValidConfirmPassword = validateConfirmPassword(password,confirmPassword).first
+
+                          nameError = validateName(name).second
+                          emailError = validateEmail(email).second
+                          passwordError = validatePassword(password).second
+                          confirmPasswordError = validateConfirmPassword(password,confirmPassword).second
+
+                          if (isValidName && isValidEmail && isValidPassword && isValidConfirmPassword){
+                             auth.createUserWithEmailAndPassword(email,password).
+                                     addOnCompleteListener(activity) {task->
+                                         if (task.isSuccessful)
+                                             onRegisterSuccess()
+                                     }
+                          }else{
+                              registerError = when(task.isSuccesful){
+                                  is FirebaseAuthInvalidCredentialsException->"Correo invalido"
+                                  is FirebaseAuthUserCollisionException-> "Correo ya registrado"
+                                  else->"Error al registrarse"
+                              }
+                          }
+
+                          },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(64.dp),
