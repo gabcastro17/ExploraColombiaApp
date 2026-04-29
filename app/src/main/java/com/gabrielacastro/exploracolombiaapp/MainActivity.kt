@@ -9,6 +9,10 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.gabrielacastro.exploracolombiaapp.ui.elements.AddPlaceScreen
+import com.gabrielacastro.exploracolombiaapp.ui.elements.HomeScreen
+import com.gabrielacastro.exploracolombiaapp.ui.elements.LoginScreen
+import com.gabrielacastro.exploracolombiaapp.ui.elements.RegisterScreen
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 
@@ -51,11 +55,12 @@ class MainActivity : ComponentActivity() {
                     }, onNavigateToLogin = {})
                 }
                 composable("home") {
-                    HomeScreen(onClickLogout = {
-                        myNavController.navigate("login") {
-                            popUpTo(0)
-                        }
-                    })
+                    HomeScreen(
+                        onNavigateToAddPlace = { myNavController.navigate("add_place")}
+                    )
+                }
+                composable(route = "add_place"){
+                    AddPlaceScreen()
                 }
 
             }
